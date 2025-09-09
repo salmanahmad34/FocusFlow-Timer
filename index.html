@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusFlow Timer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3B82F6;
+            --primary-light: #60A5FA;
+            --work-color: #10B981;
+            --break-color: #F59E0B;
+            --text: #1F2937;
+            --text-light: #6B7280;
+            --background: #F9FAFB;
+            --surface: #FFFFFF;
+            --button-text: #FFFFFF;
+            --shadow: rgba(0, 0, 0, 0.05);
+            --border: #E5E7EB;
+        }
+
+        .dark-mode {
+            --primary: #60A5FA;
+            --primary-light: #93C5FD;
+            --work-color: #34D399;
+            --break-color: #FBBF24;
+            --text: #F9FAFB;
+            --text-light: #D1D5DB;
+            --background: #111827;
+            --surface: #1F2937;
+            --button-text: #FFFFFF;
+            --shadow: rgba(0, 0, 0, 0.2);
+            --border: #374151;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s, transform 0.2s;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-top: 20px;
+        }
+
+        h1 {
+            color: var(--primary);
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .theme-toggle {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+
+        .theme-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .theme-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--primary-light);
+            border-radius: 34px;
+            transition: .4s;
+        }
+
+        .theme-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            border-radius: 50%;
+            transition: .4s;
+        }
+
+        input:checked + .theme-slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .theme-slider:before {
+            transform: translateX(30px);
+        }
+
+        .theme-icons {
+            position: absolute;
+            top: 5px;
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 8px;
+            pointer-events: none;
+        }
+
+        .theme-icons i {
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .timer-card {
+            background-color: var(--surface);
+            border-radius: 20px;
+            box-shadow: 0 15px 30px var(--shadow);
+            padding: 30px;
+            margin-bottom: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .timer-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary-light), var(--primary));
+        }
+
+        .mode-label {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: rgba(59, 130, 246, 0.1);
+            padding: 10px 20px;
+            border-radius: 50px;
+            display: inline-block;
+        }
+
+        .timer-circle {
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            background: conic-gradient(var(--work-color) 0deg, #E5E7EB 0deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px auto;
+            position: relative;
+            transition: all 0.5s ease;
+            box-shadow: 0 10px 25px var(--shadow);
+        }
+
+        .timer-circle.break-mode {
+            background: conic-gradient(var(--break-color) 0deg, #E5E7EB 0deg);
+        }
+
+        .timer-display {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: var(--surface);
+            width: 210px;
+            height: 210px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
+            box-shadow: 0 5px 15px var(--shadow);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 25px;
+        }
+
+        button {
+            padding: 14px 25px;
+            border: none;
+            border-radius: 10px;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--button-text);
+            box-shadow: 0 4px 12px var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            flex: 1;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px var(--shadow);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        #startBtn {
+            background-color: var(--work-color);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        #pauseBtn {
+            background-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        #resetBtn {
+            background-color: #6B7280;
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+        }
+
+        .break-mode-btn #startBtn {
+            background-color: var(--break-color);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .settings-section {
+            background-color: var(--surface);
+            border-radius: 20px;
+            box-shadow: 0 15px 30px var(--shadow);
+            padding: 30px;
+            margin-bottom: 25px;
+        }
+
+        .settings-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 25px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .time-inputs {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .input-group {
+            flex: 1;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.95rem;
+            color: var(--text-light);
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--surface);
+            color: var(--text);
+            text-align: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        #saveCustomTime {
+            background-color: var(--primary);
+            width: 100%;
+            justify-content: center;
+            padding: 16px;
+            font-size: 1.1rem;
+        }
+
+        .progress-section {
+            background-color: var(--surface);
+            border-radius: 20px;
+            box-shadow: 0 15px 30px var(--shadow);
+            padding: 30px;
+            margin-bottom: 25px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .progress-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .session-count {
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 1rem;
+            background: rgba(59, 130, 246, 0.1);
+            padding: 8px 16px;
+            border-radius: 50px;
+        }
+
+        .progress-container {
+            margin: 20px 0;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            color: var(--text);
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            height: 12px;
+            background: #E5E7EB;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--primary-light));
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.8s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+
+        .motivational-quote {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            color: var(--text-light);
+            font-style: italic;
+            font-size: 1rem;
+            border-top: 1px solid var(--border);
+            line-height: 1.5;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--surface);
+            color: var(--text);
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            transition: transform 0.4s, opacity 0.4s;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 90%;
+            width: auto;
+            border-left: 4px solid var(--primary);
+        }
+
+        .notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        @media (max-width: 500px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .timer-circle {
+                width: 220px;
+                height: 220px;
+            }
+            
+            .timer-display {
+                width: 190px;
+                height: 190px;
+                font-size: 3rem;
+            }
+            
+            .time-inputs {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            button {
+                padding: 12px 20px;
+            }
+        }
+
+        /* Animation for timer completion */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .timer-complete {
+            animation: pulse 0.5s ease-in-out 3;
+        }
+        
+        /* Focus mode styling */
+        .focus-mode .container > :not(.timer-card) {
+            opacity: 0.3;
+            transition: opacity 0.5s ease;
+        }
+        
+        .focus-mode .timer-card {
+            transform: scale(1.03);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>FocusFlow Timer</h1>
+            <label class="theme-toggle">
+                <input type="checkbox" id="themeToggle">
+                <span class="theme-slider"></span>
+                <div class="theme-icons">
+                    <i class="fas fa-sun"></i>
+                    <i class="fas fa-moon"></i>
+                </div>
+            </label>
+        </header>
+        
+        <div class="timer-card">
+            <div style="text-align: center;">
+                <div class="mode-label" id="modeLabel">Work Session</div>
+            </div>
+            <div class="timer-circle" id="timerCircle">
+                <div class="timer-display" id="timerDisplay">25:00</div>
+            </div>
+            <div class="timer-controls">
+                <button id="startBtn"><i class="fas fa-play"></i> Start</button>
+                <button id="pauseBtn"><i class="fas fa-pause"></i> Pause</button>
+                <button id="resetBtn"><i class="fas fa-redo"></i> Reset</button>
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <h2 class="settings-title"><i class="fas fa-cog"></i> Custom Timer Settings</h2>
+            <div class="time-inputs">
+                <div class="input-group">
+                    <label for="workTime">Work Duration (min)</label>
+                    <input type="number" id="workTime" min="1" max="60" value="25">
+                </div>
+                <div class="input-group">
+                    <label for="breakTime">Break Duration (min)</label>
+                    <input type="number" id="breakTime" min="1" max="30" value="5">
+                </div>
+            </div>
+            <button id="saveCustomTime"><i class="fas fa-save"></i> Save Settings</button>
+        </div>
+        
+        <div class="progress-section">
+            <div class="progress-header">
+                <h2 class="progress-title">Today's Progress</h2>
+                <span class="session-count" id="sessionCount">0/4 sessions</span>
+            </div>
+            <div class="progress-container">
+                <div class="progress-info">
+                    <span>Completed</span>
+                    <span id="progressPercentage">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+            <div class="motivational-quote" id="motivationalQuote">
+                <i class="fas fa-quote-left"></i> You've got this! Start your first session. <i class="fas fa-quote-right"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification">
+        <i class="fas fa-bell"></i>
+        <span id="notificationText"></span>
+    </div>
+
+    <script>
+        // DOM Elements
+        const themeToggle = document.getElementById('themeToggle');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const modeLabel = document.getElementById('modeLabel');
+        const timerCircle = document.getElementById('timerCircle');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const sessionCount = document.getElementById('sessionCount');
+        const progressFill = document.getElementById('progressFill');
+        const progressPercentage = document.getElementById('progressPercentage');
+        const motivationalQuote = document.getElementById('motivationalQuote');
+        const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notificationText');
+        const workTimeInput = document.getElementById('workTime');
+        const breakTimeInput = document.getElementById('breakTime');
+        const saveCustomTimeBtn = document.getElementById('saveCustomTime');
+
+        // App State
+        let state = {
+            isRunning: false,
+            isWorkMode: true,
+            currentTime: 25 * 60,
+            interval: null,
+            sessionsCompleted: 0,
+            workDuration: 25,
+            breakDuration: 5,
+            dailyGoal: 4,
+            totalTime: 25 * 60,
+            darkMode: false
+        };
+
+        // Motivational Quotes
+        const quotes = [
+            "Great job! Keep going 🚀",
+            "Productivity is your superpower! 💪",
+            "One session at a time! You're doing great! 🌟",
+            "Focus leads to amazing results! 🎯",
+            "Your progress is impressive! Keep it up! 📈",
+            "Every session brings you closer to your goals! 🏆",
+            "You're building great habits! 🙌",
+            "Consistency is key! You've got this! 🔑"
+        ];
+
+        // Initialize the app
+        function init() {
+            loadState();
+            updateUI();
+            setupEventListeners();
+            
+            // Check if user prefers dark mode
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                themeToggle.checked = true;
+                toggleDarkMode(true);
+            }
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Theme toggle
+            themeToggle.addEventListener('change', function() {
+                toggleDarkMode(this.checked);
+            });
+            
+            // Timer controls
+            startBtn.addEventListener('click', startTimer);
+            pauseBtn.addEventListener('click', pauseTimer);
+            resetBtn.addEventListener('click', resetTimer);
+            saveCustomTimeBtn.addEventListener('click', saveCustomTime);
+            
+            // Enable focus mode when timer starts
+            startBtn.addEventListener('click', () => {
+                document.body.classList.add('focus-mode');
+            });
+            
+            // Disable focus mode when timer pauses or resets
+            pauseBtn.addEventListener('click', () => {
+                document.body.classList.remove('focus-mode');
+            });
+            
+            resetBtn.addEventListener('click', () => {
+                document.body.classList.remove('focus-mode');
+            });
+        }
+
+        // Toggle between light and dark mode
+        function toggleDarkMode(isDark) {
+            if (isDark) {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+            state.darkMode = isDark;
+            saveState();
+        }
+
+        // Start the timer
+        function startTimer() {
+            if (state.isRunning) return;
+            
+            state.isRunning = true;
+            startBtn.innerHTML = '<i class="fas fa-play"></i> Running';
+            startBtn.style.opacity = '0.8';
+            
+            state.interval = setInterval(() => {
+                state.currentTime--;
+                
+                if (state.currentTime <= 0) {
+                    clearInterval(state.interval);
+                    handleTimerComplete();
+                }
+                
+                updateTimerUI();
+            }, 1000);
+        }
+
+        // Pause the timer
+        function pauseTimer() {
+            if (!state.isRunning) return;
+            
+            clearInterval(state.interval);
+            state.isRunning = false;
+            startBtn.innerHTML = '<i class="fas fa-play"></i> Resume';
+            startBtn.style.opacity = '1';
+        }
+
+        // Reset the timer
+        function resetTimer() {
+            clearInterval(state.interval);
+            state.isRunning = false;
+            
+            state.currentTime = state.isWorkMode ? 
+                state.workDuration * 60 : 
+                state.breakDuration * 60;
+            
+            state.totalTime = state.currentTime;
+            
+            startBtn.innerHTML = '<i class="fas fa-play"></i> Start';
+            startBtn.style.opacity = '1';
+            
+            updateTimerUI();
+        }
+
+        // Handle timer completion
+        function handleTimerComplete() {
+            // Add completion animation
+            timerCircle.classList.add('timer-complete');
+            setTimeout(() => {
+                timerCircle.classList.remove('timer-complete');
+            }, 1500);
+            
+            if (state.isWorkMode) {
+                state.sessionsCompleted++;
+                showNotification("Work session complete! Time for a break.");
+                
+                state.isWorkMode = false;
+                state.currentTime = state.breakDuration * 60;
+                state.totalTime = state.currentTime;
+                modeLabel.textContent = "Break Time";
+                timerCircle.classList.add('break-mode');
+                
+                showRandomQuote();
+                
+                // Check if completed all sessions
+                if (state.sessionsCompleted === state.dailyGoal) {
+                    showNotification("Congratulations! You've completed all your sessions for today!");
+                }
+            } else {
+                showNotification("Break is over! Back to work.");
+                
+                state.isWorkMode = true;
+                state.currentTime = state.workDuration * 60;
+                state.totalTime = state.currentTime;
+                modeLabel.textContent = "Work Session";
+                timerCircle.classList.remove('break-mode');
+            }
+            
+            updateUI();
+            saveState();
+            
+            // Auto-start the next timer
+            startTimer();
+        }
+
+        // Update timer UI
+        function updateTimerUI() {
+            const minutes = Math.floor(state.currentTime / 60);
+            const seconds = state.currentTime % 60;
+            
+            timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Update progress circle
+            const progress = 360 - (state.currentTime / state.totalTime * 360);
+            timerCircle.style.background = `conic-gradient(${state.isWorkMode ? '#10B981' : '#F59E0B'} ${progress}deg, #E5E7EB 0deg)`;
+        }
+
+        // Update all UI elements
+        function updateUI() {
+            updateTimerUI();
+            
+            sessionCount.textContent = `${state.sessionsCompleted}/${state.dailyGoal} sessions`;
+            const progressPercent = Math.min(100, (state.sessionsCompleted / state.dailyGoal) * 100);
+            progressFill.style.width = `${progressPercent}%`;
+            progressPercentage.textContent = `${Math.round(progressPercent)}%`;
+        }
+
+        // Show notification
+        function showNotification(message) {
+            notificationText.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Show random motivational quote
+        function showRandomQuote() {
+            const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            motivationalQuote.innerHTML = `<i class="fas fa-quote-left"></i> ${randomQuote} <i class="fas fa-quote-right"></i>`;
+        }
+
+        // Save custom time settings
+        function saveCustomTime() {
+            state.workDuration = parseInt(workTimeInput.value);
+            state.breakDuration = parseInt(breakTimeInput.value);
+            
+            // Reset timer with new settings if needed
+            if (!state.isRunning) {
+                state.currentTime = state.isWorkMode ? 
+                    state.workDuration * 60 : 
+                    state.breakDuration * 60;
+                state.totalTime = state.currentTime;
+                updateTimerUI();
+            }
+            
+            saveState();
+            showNotification("Timer settings saved successfully!");
+        }
+
+        // Load state from localStorage
+        function loadState() {
+            const savedState = localStorage.getItem('focusFlowState');
+            if (savedState) {
+                const parsedState = JSON.parse(savedState);
+                state = { ...state, ...parsedState };
+                
+                // Update inputs with saved values
+                workTimeInput.value = state.workDuration;
+                breakTimeInput.value = state.breakDuration;
+                themeToggle.checked = state.darkMode;
+                
+                // Apply dark mode if needed
+                if (state.darkMode) {
+                    document.body.classList.add('dark-mode');
+                }
+                
+                // Update timer with saved values
+                state.currentTime = state.isWorkMode ? 
+                    state.workDuration * 60 : 
+                    state.breakDuration * 60;
+                state.totalTime = state.currentTime;
+                updateUI();
+            }
+        }
+
+        // Save state to localStorage
+        function saveState() {
+            localStorage.setItem('focusFlowState', JSON.stringify(state));
+        }
+
+        // Initialize the app when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
